@@ -98,5 +98,5 @@ outputs:
     description: 'Resolved path to the raw xcodebuild log.'
 
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'

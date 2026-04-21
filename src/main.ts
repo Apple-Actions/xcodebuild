@@ -1,33 +1,42 @@
-import * as core from '@actions/core'
-import * as exec from '@actions/exec'
-import * as fs from 'fs'
-import * as path from 'path'
+import {
+  getBooleanInput,
+  getInput,
+  info,
+  setFailed,
+  setOutput
+} from '@actions/core'
+import {exec} from '@actions/exec'
+import {existsSync, mkdirSync, readdirSync, rmSync} from 'node:fs'
+import {dirname, join, resolve} from 'node:path'
 
 async function run(): Promise<void> {
   try {
-    const workspace = core.getInput('workspace')
-    const project = core.getInput('project')
-    const scheme = core.getInput('scheme', { required: true })
-    const configuration = core.getInput('configuration') || 'Release'
-    const sdk = core.getInput('sdk')
-    const destination = core.getInput('destination')
-    const xcAction = core.getInput('action') || 'build'
-    const archivePathInput = core.getInput('archive-path')
-    const exportOptionsPlist = core.getInput('export-options-plist')
-    const exportPathInput = core.getInput('export-path')
-    const derivedDataPath = core.getInput('derived-data-path') || '.build/DerivedData'
-    const resultBundlePathInput = core.getInput('result-bundle-path')
-    const buildNumber = core.getInput('build-number')
-    const buildSettingsInput = core.getInput('build-settings')
-    const extraArguments = core.getInput('extra-arguments')
-    const outputFormatter = core.getInput('output-formatter')
-    const logPathInput = core.getInput('log-path')
-    const parallelizeTargets = core.getBooleanInput('parallelize-targets')
-    const showTimingSummary = core.getBooleanInput('show-build-timing-summary')
-    const disableAutoPackageResolution = core.getBooleanInput('disable-automatic-package-resolution')
-    const zipResultBundle = core.getBooleanInput('zip-result-bundle')
-    const zipArchive = core.getBooleanInput('zip-archive')
-    const workingDirectoryInput = core.getInput('working-directory')
+    const workspace = getInput('workspace')
+    const project = getInput('project')
+    const scheme = getInput('scheme', {required: true})
+    const configuration = getInput('configuration') || 'Release'
+    const sdk = getInput('sdk')
+    const destination = getInput('destination')
+    const xcAction = getInput('action') || 'build'
+    const archivePathInput = getInput('archive-path')
+    const exportOptionsPlist = getInput('export-options-plist')
+    const exportPathInput = getInput('export-path')
+    const derivedDataPath =
+      getInput('derived-data-path') || '.build/DerivedData'
+    const resultBundlePathInput = getInput('result-bundle-path')
+    const buildNumber = getInput('build-number')
+    const buildSettingsInput = getInput('build-settings')
+    const extraArguments = getInput('extra-arguments')
+    const outputFormatter = getInput('output-formatter')
+    const logPathInput = getInput('log-path')
+    const parallelizeTargets = getBooleanInput('parallelize-targets')
+    const showTimingSummary = getBooleanInput('show-build-timing-summary')
+    const disableAutoPackageResolution = getBooleanInput(
+      'disable-automatic-package-resolution'
+    )
+    const zipResultBundle = getBooleanInput('zip-result-bundle')
+    const zipArchive = getBooleanInput('zip-archive')
+    const workingDirectoryInput = getInput('working-directory')
 
     if (!workspace && !project) {
       throw new Error('Either `workspace` or `project` must be provided.')
@@ -39,24 +48,26 @@ async function run(): Promise<void> {
       throw new Error('`archive-path` is required when `action` is `archive`.')
     }
     if (exportOptionsPlist && !archivePathInput) {
-      throw new Error('`archive-path` is required when `export-options-plist` is provided.')
+      throw new Error(
+        '`archive-path` is required when `export-options-plist` is provided.'
+      )
     }
 
     const cwd = workingDirectoryInput
-      ? path.resolve(workingDirectoryInput)
+      ? resolve(workingDirectoryInput)
       : process.cwd()
 
     const resultBundlePath =
-      resultBundlePathInput || path.join('.build', 'Artifacts', `${scheme}.xcresult`)
-    const logPath = logPathInput || path.join('.build', `${scheme}.log`)
+      resultBundlePathInput || join('.build', 'Artifacts', `${scheme}.xcresult`)
+    const logPath = logPathInput || join('.build', `${scheme}.log`)
     const archivePath = archivePathInput || ''
 
-    const resultBundleAbs = path.resolve(cwd, resultBundlePath)
-    if (fs.existsSync(resultBundleAbs)) {
-      fs.rmSync(resultBundleAbs, { recursive: true, force: true })
+    const resultBundleAbs = resolve(cwd, resultBundlePath)
+    if (existsSync(resultBundleAbs)) {
+      rmSync(resultBundleAbs, {recursive: true, force: true})
     }
-    fs.mkdirSync(path.dirname(resultBundleAbs), { recursive: true })
-    fs.mkdirSync(path.dirname(path.resolve(cwd, logPath)), { recursive: true })
+    mkdirSync(dirname(resultBundleAbs), {recursive: true})
+    mkdirSync(dirname(resolve(cwd, logPath)), {recursive: true})
 
     const args: string[] = []
     if (workspace) args.push('-workspace', workspace)
@@ -67,7 +78,8 @@ async function run(): Promise<void> {
     if (destination) args.push('-destination', destination)
     if (parallelizeTargets) args.push('-parallelizeTargets')
     if (showTimingSummary) args.push('-showBuildTimingSummary')
-    if (disableAutoPackageResolution) args.push('-disableAutomaticPackageResolution')
+    if (disableAutoPackageResolution)
+      args.push('-disableAutomaticPackageResolution')
     args.push('-derivedDataPath', derivedDataPath)
     args.push('-resultBundlePath', resultBundlePath)
     if (archivePath) args.push('-archivePath', archivePath)
@@ -93,45 +105,51 @@ async function run(): Promise<void> {
     let ipaPath = ''
     if (exportOptionsPlist && archivePath) {
       exportPath =
-        exportPathInput || path.join(path.dirname(resultBundlePath), `${scheme}.ipa`)
-      fs.mkdirSync(path.resolve(cwd, exportPath), { recursive: true })
+        exportPathInput || join(dirname(resultBundlePath), `${scheme}.ipa`)
+      mkdirSync(resolve(cwd, exportPath), {recursive: true})
       const exportArgs = [
         '-exportArchive',
-        '-exportOptionsPlist', exportOptionsPlist,
-        '-archivePath', archivePath,
-        '-exportPath', exportPath,
+        '-exportOptionsPlist',
+        exportOptionsPlist,
+        '-archivePath',
+        archivePath,
+        '-exportPath',
+        exportPath
       ]
       await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true)
 
       try {
-        const exportAbs = path.resolve(cwd, exportPath)
-        const ipa = fs
-          .readdirSync(exportAbs)
-          .find((f) => f.toLowerCase().endsWith('.ipa'))
-        if (ipa) ipaPath = path.join(exportPath, ipa)
+        const exportAbs = resolve(cwd, exportPath)
+        const ipa = readdirSync(exportAbs).find(f =>
+          f.toLowerCase().endsWith('.ipa')
+        )
+        if (ipa) ipaPath = join(exportPath, ipa)
       } catch {
         // ignore
       }
     }
 
-    if (zipResultBundle && fs.existsSync(resultBundleAbs)) {
+    if (zipResultBundle && existsSync(resultBundleAbs)) {
       await ditto(resultBundleAbs, `${resultBundleAbs}.zip`, cwd)
     }
     if (zipArchive && archivePath) {
-      const archiveAbs = path.resolve(cwd, archivePath)
-      if (fs.existsSync(archiveAbs)) {
+      const archiveAbs = resolve(cwd, archivePath)
+      if (existsSync(archiveAbs)) {
         await ditto(archiveAbs, `${archiveAbs}.zip`, cwd)
       }
     }
 
-    core.setOutput('result-bundle-path', resultBundlePath)
-    core.setOutput('log-path', logPath)
-    if (archivePath) core.setOutput('archive-path', archivePath)
-    if (exportPath) core.setOutput('export-path', exportPath)
-    if (ipaPath) core.setOutput('ipa-path', ipaPath)
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err)
-    core.setFailed(message)
+    setOutput('result-bundle-path', resultBundlePath)
+    setOutput('log-path', logPath)
+    if (archivePath) setOutput('archive-path', archivePath)
+    if (exportPath) setOutput('export-path', exportPath)
+    if (ipaPath) setOutput('ipa-path', ipaPath)
+  } catch (error) {
+    if (error instanceof Error) {
+      setFailed(error.message)
+    } else {
+      setFailed(`Action failed with error ${error}`)
+    }
   }
 }
 
@@ -140,22 +158,22 @@ async function runXcodebuild(
   formatter: string,
   logPath: string,
   cwd: string,
-  appendLog: boolean,
+  appendLog: boolean
 ): Promise<void> {
   const quoted = ['xcrun', 'xcodebuild', ...args].map(shellQuote).join(' ')
   const tee = `tee ${appendLog ? '-a' : ''} ${shellQuote(logPath)}`.trim()
   const pipeline = formatter
     ? `set -o pipefail; ${quoted} | ${tee} | ${formatter}`
     : `set -o pipefail; ${quoted} | ${tee}`
-  core.info(`Running: ${quoted}`)
-  await exec.exec('bash', ['-c', pipeline], { cwd })
+  info(`Running: ${quoted}`)
+  await exec('bash', ['-c', pipeline], {cwd})
 }
 
 async function ditto(src: string, dest: string, cwd: string): Promise<void> {
-  await exec.exec(
+  await exec(
     'ditto',
     ['-c', '-k', '--sequesterRsrc', '--keepParent', src, dest],
-    { cwd },
+    {cwd}
   )
 }
 
