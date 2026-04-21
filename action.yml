@@ -55,9 +55,9 @@ inputs:
     description: 'Additional arguments passed verbatim to xcodebuild (shell-quoted).'
     required: false
   output-formatter:
-    description: 'Command to pipe xcodebuild output through (e.g. xcbeautify, xcpretty). Set to an empty string to disable.'
+    description: 'Command to pipe xcodebuild output through (e.g. xcbeautify, xcpretty). Set to an empty string to disable. The default uses xcbeautify''s github-actions renderer so compile errors and warnings surface as inline PR annotations.'
     required: false
-    default: 'xcbeautify'
+    default: 'xcbeautify --renderer github-actions'
   log-path:
     description: 'Path to write the raw xcodebuild log. Defaults to `.build/<scheme>.log`.'
     required: false

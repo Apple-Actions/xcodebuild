@@ -53,7 +53,7 @@ A GitHub Action that wraps `xcrun xcodebuild` to build, archive, and export an X
 | `build-number` | Value passed as `CURRENT_PROJECT_VERSION`. | — |
 | `build-settings` | Additional `KEY=VALUE` build settings, one per line. | — |
 | `extra-arguments` | Additional arguments passed verbatim to `xcodebuild`. | — |
-| `output-formatter` | Command to pipe output through (`xcbeautify`, `xcpretty`, or empty). | `xcbeautify` |
+| `output-formatter` | Command to pipe output through (`xcbeautify`, `xcpretty`, or empty). The default enables xcbeautify's `github-actions` renderer so compile errors/warnings surface as inline PR annotations. | `xcbeautify --renderer github-actions` |
 | `log-path` | Path to write the raw xcodebuild log. | `.build/<scheme>.log` |
 | `parallelize-targets` | Pass `-parallelizeTargets`. | `true` |
 | `show-build-timing-summary` | Pass `-showBuildTimingSummary`. | `true` |
