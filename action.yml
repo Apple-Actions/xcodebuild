@@ -1,0 +1,102 @@
+name: 'Xcode Build'
+description: 'Build, archive, and export an Xcode project or workspace with xcodebuild.'
+author: 'Dave Johansen'
+branding:
+  icon: 'tool'
+  color: 'blue'
+
+inputs:
+  workspace:
+    description: 'Path to the Xcode workspace (.xcworkspace). Mutually exclusive with `project`.'
+    required: false
+  project:
+    description: 'Path to the Xcode project (.xcodeproj). Mutually exclusive with `workspace`.'
+    required: false
+  scheme:
+    description: 'Scheme to build.'
+    required: true
+  configuration:
+    description: 'Build configuration (e.g. Debug, Release).'
+    required: false
+    default: 'Release'
+  sdk:
+    description: 'SDK to build against (e.g. iphoneos, iphonesimulator, macosx).'
+    required: false
+  destination:
+    description: 'Destination specifier (e.g. "generic/platform=iOS").'
+    required: false
+  action:
+    description: 'xcodebuild action: build, archive, test, build-for-testing, clean.'
+    required: false
+    default: 'build'
+  archive-path:
+    description: 'Output path for the .xcarchive. Required when `action` is `archive`.'
+    required: false
+  export-options-plist:
+    description: 'Path to an ExportOptions.plist. When provided after an archive, the archive is exported to `export-path`.'
+    required: false
+  export-path:
+    description: 'Directory to export the archive to when `export-options-plist` is provided. Defaults to `<result-bundle-dir>/<scheme>.ipa`.'
+    required: false
+  derived-data-path:
+    description: 'Derived data directory.'
+    required: false
+    default: '.build/DerivedData'
+  result-bundle-path:
+    description: 'Path for the .xcresult bundle. Defaults to `.build/Artifacts/<scheme>.xcresult`.'
+    required: false
+  build-number:
+    description: 'Value passed to xcodebuild as CURRENT_PROJECT_VERSION.'
+    required: false
+  build-settings:
+    description: 'Additional xcodebuild build settings as KEY=VALUE pairs, one per line.'
+    required: false
+  extra-arguments:
+    description: 'Additional arguments passed verbatim to xcodebuild (shell-quoted).'
+    required: false
+  output-formatter:
+    description: 'Command to pipe xcodebuild output through (e.g. xcbeautify, xcpretty). Set to an empty string to disable.'
+    required: false
+    default: 'xcbeautify'
+  log-path:
+    description: 'Path to write the raw xcodebuild log. Defaults to `.build/<scheme>.log`.'
+    required: false
+  parallelize-targets:
+    description: 'Pass -parallelizeTargets to xcodebuild.'
+    required: false
+    default: 'true'
+  show-build-timing-summary:
+    description: 'Pass -showBuildTimingSummary to xcodebuild.'
+    required: false
+    default: 'true'
+  disable-automatic-package-resolution:
+    description: 'Pass -disableAutomaticPackageResolution to xcodebuild.'
+    required: false
+    default: 'true'
+  zip-result-bundle:
+    description: 'Zip the .xcresult bundle next to itself as <result-bundle-path>.zip after the build.'
+    required: false
+    default: 'false'
+  zip-archive:
+    description: 'Zip the .xcarchive next to itself as <archive-path>.zip after archiving.'
+    required: false
+    default: 'false'
+  working-directory:
+    description: 'Working directory to run xcodebuild in.'
+    required: false
+
+outputs:
+  archive-path:
+    description: 'Resolved path to the produced .xcarchive, if any.'
+  export-path:
+    description: 'Resolved directory containing the exported IPA, if any.'
+  ipa-path:
+    description: 'Path to the first .ipa found inside `export-path`, if any.'
+  result-bundle-path:
+    description: 'Resolved path to the .xcresult bundle.'
+  log-path:
+    description: 'Resolved path to the raw xcodebuild log.'
+
+runs:
+  using: 'node20'
+  main: 'dist/index.js'

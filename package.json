@@ -1,0 +1,29 @@
+{
+  "name": "xcodebuild-action",
+  "version": "1.0.0",
+  "description": "GitHub Action to build, archive, and export an Xcode project with xcodebuild.",
+  "main": "src/main.ts",
+  "engines": {
+    "node": "24"
+  },
+  "scripts": {
+    "build": "ncc build src/main.ts -o dist --source-map --license licenses.txt",
+    "typecheck": "tsc --noEmit"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Apple-Actions/xcodebuld.git"
+  },
+  "author": "Itty Bitty Apps Pty Ltd",
+  "license": "MIT",
+  "dependencies": {
+    "@actions/core": "^1.11.1",
+    "@actions/exec": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "@vercel/ncc": "^0.38.1",
+    "typescript": "^5.4.3"
+  },
+  "packageManager": "yarn@4.14.1"
+}
