@@ -5,6 +5,9 @@ A GitHub Action that wraps `xcrun xcodebuild` to build, archive, and export an X
 - [`Apple-Actions/import-codesign-certs`](https://github.com/Apple-Actions/import-codesign-certs)
 - [`Apple-Actions/download-provisioning-profiles`](https://github.com/Apple-Actions/download-provisioning-profiles)
 - [`Apple-Actions/upload-testflight-build`](https://github.com/Apple-Actions/upload-testflight-build)
+- [`Apple-Actions/notarize`](https://github.com/Apple-Actions/notarize)
+
+See [`Apple-Actions/Example-macOS`](https://github.com/Apple-Actions/Example-macOS) for a full macOS workflow that ships to TestFlight and as a notarized Developer ID DMG.
 
 ## Usage
 
@@ -34,29 +37,67 @@ A GitHub Action that wraps `xcrun xcodebuild` to build, archive, and export an X
     build-number: ${{ github.run_number }}
 ```
 
-### Archive once, export twice (macOS App Store + Developer ID)
+### macOS: Mac App Store and Developer ID from one archive
+
+Archive once and export twice. The notarized DMG then holds the same binary you upload to TestFlight, and the dSYMs in the archive symbolicate crashes from both.
 
 `action: export` runs only `xcodebuild -exportArchive` against an existing archive, so one archive can be exported with several methods. `workspace` and `project` aren't needed in this mode.
 
 ```yaml
-- uses: Apple-Actions/xcodebuild@v1
+- id: build
+  uses: Apple-Actions/xcodebuild@v1
   with:
     project: App.xcodeproj
     scheme: App
     action: archive
     archive-path: .build/Artifacts/App.xcarchive
-    export-options-plist: ExportOptions.plist
-    export-path: .build/Artifacts/export
+    export-options-plist: ExportOptions.plist # method: app-store-connect
+    build-number: ${{ github.run_number }}
+
 - id: developer-id
   uses: Apple-Actions/xcodebuild@v1
   with:
     scheme: App
     action: export
-    archive-path: .build/Artifacts/App.xcarchive
+    archive-path: ${{ steps.build.outputs.archive-path }}
     export-options-plist: ExportOptions-DeveloperID.plist
     export-path: .build/Artifacts/developer-id
-# steps.developer-id.outputs.app-path -> .build/Artifacts/developer-id/App.app
+
+- uses: Apple-Actions/upload-testflight-build@v5
+  with:
+    app-path: ${{ steps.build.outputs.pkg-path }}
+    app-type: macos
+    backend: altool
+    issuer-id: ${{ vars.APPSTORE_ISSUER_ID }}
+    api-key-id: ${{ vars.APPSTORE_API_KEY_ID }}
+    api-private-key: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+
+# Package ${{ steps.developer-id.outputs.app-path }} into a DMG, then notarize it.
 ```
+
+Use the `pkg-path` and `app-path` outputs rather than hard-coding paths inside the export directories. See [`Apple-Actions/Example-macOS`](https://github.com/Apple-Actions/Example-macOS) for the full workflow, including DMG packaging with [`notarize`](https://github.com/Apple-Actions/notarize).
+
+Example `ExportOptions-DeveloperID.plist`:
+
+```xml
+<dict>
+	<key>method</key>
+	<string>developer-id</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.example.app</key>
+		<string>DeveloperID com.example.app</string>
+	</dict>
+	<key>signingCertificate</key>
+	<string>Developer ID Application</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>teamID</key>
+	<string>ABCDE12345</string>
+</dict>
+```
+
+In an App Store macOS `ExportOptions.plist`, `installerSigningCertificate` is `3rd Party Mac Developer Installer`. Keychain Access shows the same certificate as "Mac Installer Distribution".
 
 ## Inputs
 
@@ -102,6 +143,14 @@ A GitHub Action that wraps `xcrun xcodebuild` to build, archive, and export an X
 
 - A macOS runner with Xcode installed (e.g. `runs-on: macos-14` or newer).
 - The chosen `output-formatter` must be on `PATH`. `xcbeautify` is pre-installed on GitHub-hosted macOS runners; install it with `brew install xcbeautify` elsewhere, or set `output-formatter: ''` to disable.
+
+## Troubleshooting
+
+### `error: exportArchive "App.app" requires a provisioning profile.`
+
+**Cause:** an archive signed with a Mac App Store profile carries the `com.apple.application-identifier` and `com.apple.developer.team-identifier` entitlements, so any re-export of it, including Developer ID, needs a profile for that method. An app with no profile-only entitlements, archived without a profile, wouldn't need one. That's why the export often works locally and fails in CI.
+
+**Fix:** create a `MAC_APP_DIRECT` (Developer ID) profile for the bundle ID with the Developer ID Application certificate, download it with [`download-provisioning-profiles`](https://github.com/Apple-Actions/download-provisioning-profiles#macos-app-store-and-developer-id), and map it under `provisioningProfiles` in `ExportOptions-DeveloperID.plist`.
 
 ## Development
 
