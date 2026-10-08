@@ -7,10 +7,10 @@ branding:
 
 inputs:
   workspace:
-    description: 'Path to the Xcode workspace (.xcworkspace). Mutually exclusive with `project`.'
+    description: 'Path to the Xcode workspace (.xcworkspace). Mutually exclusive with `project`. Required unless `action` is `export`.'
     required: false
   project:
-    description: 'Path to the Xcode project (.xcodeproj). Mutually exclusive with `workspace`.'
+    description: 'Path to the Xcode project (.xcodeproj). Mutually exclusive with `workspace`. Required unless `action` is `export`.'
     required: false
   scheme:
     description: 'Scheme to build.'
@@ -26,11 +26,11 @@ inputs:
     description: 'Destination specifier (e.g. "generic/platform=iOS").'
     required: false
   action:
-    description: 'xcodebuild action: build, archive, test, build-for-testing, clean.'
+    description: 'xcodebuild action: build, archive, test, build-for-testing, clean, or export. `export` only runs `xcodebuild -exportArchive` on an existing `archive-path`, requires `export-options-plist`, and ignores `workspace`/`project`.'
     required: false
     default: 'build'
   archive-path:
-    description: 'Output path for the .xcarchive. Required when `action` is `archive`.'
+    description: 'Output path for the .xcarchive. Required when `action` is `archive`. When `action` is `export`, the existing .xcarchive to export.'
     required: false
   export-options-plist:
     description: 'Path to an ExportOptions.plist. When provided after an archive, the archive is exported to `export-path`.'
@@ -92,8 +92,12 @@ outputs:
     description: 'Resolved directory containing the exported IPA, if any.'
   ipa-path:
     description: 'Path to the first .ipa found inside `export-path`, if any.'
+  app-path:
+    description: 'Path to the first .app found inside `export-path`, if any (e.g. a Developer ID export).'
+  pkg-path:
+    description: 'Path to the first .pkg found inside `export-path`, if any (e.g. a Mac App Store export).'
   result-bundle-path:
-    description: 'Resolved path to the .xcresult bundle.'
+    description: 'Resolved path to the .xcresult bundle. Not set when `action` is `export`.'
   log-path:
     description: 'Resolved path to the raw xcodebuild log.'
 
