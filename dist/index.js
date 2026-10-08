@@ -19998,12 +19998,14 @@ async function run() {
     if (workspace && project) {
       throw new Error("`workspace` and `project` are mutually exclusive.");
     }
-    if (xcAction === "archive" && !archivePathInput) {
-      throw new Error("`archive-path` is required when `action` is `archive`.");
-    }
-    if (exportOnly && !(archivePathInput && exportOptionsPlist)) {
+    if ((xcAction === "archive" || exportOnly) && !archivePathInput) {
       throw new Error(
-        "`archive-path` and `export-options-plist` are required when `action` is `export`."
+        `\`archive-path\` is required when \`action\` is \`${xcAction}\`.`
+      );
+    }
+    if (exportOnly && !exportOptionsPlist) {
+      throw new Error(
+        "`export-options-plist` is required when `action` is `export`."
       );
     }
     if (exportOptionsPlist && !archivePathInput) {
@@ -20069,13 +20071,7 @@ async function run() {
         "-exportPath",
         exportPath
       ];
-      await runXcodebuild(
-        exportArgs,
-        outputFormatter,
-        logPath,
-        cwd,
-        !exportOnly
-      );
+      await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true);
       try {
         const entries = readdirSync(resolve2(cwd, exportPath));
         const find = (ext) => {
