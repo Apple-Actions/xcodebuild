@@ -38,7 +38,12 @@ async function run(): Promise<void> {
     const zipArchive = getBooleanInput('zip-archive')
     const workingDirectoryInput = getInput('working-directory')
 
-    if (!workspace && !project) {
+    const exportOnly = xcAction === 'export'
+    const cwd = workingDirectoryInput
+      ? resolve(workingDirectoryInput)
+      : process.cwd()
+
+    if (!exportOnly && !workspace && !project) {
       throw new Error('Either `workspace` or `project` must be provided.')
     }
     if (workspace && project) {
@@ -47,15 +52,19 @@ async function run(): Promise<void> {
     if (xcAction === 'archive' && !archivePathInput) {
       throw new Error('`archive-path` is required when `action` is `archive`.')
     }
+    if (exportOnly && !(archivePathInput && exportOptionsPlist)) {
+      throw new Error(
+        '`archive-path` and `export-options-plist` are required when `action` is `export`.'
+      )
+    }
     if (exportOptionsPlist && !archivePathInput) {
       throw new Error(
         '`archive-path` is required when `export-options-plist` is provided.'
       )
     }
-
-    const cwd = workingDirectoryInput
-      ? resolve(workingDirectoryInput)
-      : process.cwd()
+    if (exportOnly && !existsSync(resolve(cwd, archivePathInput))) {
+      throw new Error(`Archive not found: ${archivePathInput}`)
+    }
 
     const resultBundlePath =
       resultBundlePathInput || join('.build', 'Artifacts', `${scheme}.xcresult`)
@@ -63,46 +72,51 @@ async function run(): Promise<void> {
     const archivePath = archivePathInput || ''
 
     const resultBundleAbs = resolve(cwd, resultBundlePath)
-    if (existsSync(resultBundleAbs)) {
-      rmSync(resultBundleAbs, {recursive: true, force: true})
-    }
-    mkdirSync(dirname(resultBundleAbs), {recursive: true})
     mkdirSync(dirname(resolve(cwd, logPath)), {recursive: true})
 
-    const args: string[] = []
-    if (workspace) args.push('-workspace', workspace)
-    if (project) args.push('-project', project)
-    args.push('-scheme', scheme)
-    args.push('-configuration', configuration)
-    if (sdk) args.push('-sdk', sdk)
-    if (destination) args.push('-destination', destination)
-    if (parallelizeTargets) args.push('-parallelizeTargets')
-    if (showTimingSummary) args.push('-showBuildTimingSummary')
-    if (disableAutoPackageResolution)
-      args.push('-disableAutomaticPackageResolution')
-    args.push('-derivedDataPath', derivedDataPath)
-    args.push('-resultBundlePath', resultBundlePath)
-    if (archivePath) args.push('-archivePath', archivePath)
-
-    if (buildNumber) {
-      args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`)
-    }
-    if (buildSettingsInput) {
-      for (const line of buildSettingsInput.split(/\r?\n/)) {
-        const trimmed = line.trim()
-        if (trimmed) args.push(trimmed)
+    if (!exportOnly) {
+      if (existsSync(resultBundleAbs)) {
+        rmSync(resultBundleAbs, {recursive: true, force: true})
       }
-    }
-    if (extraArguments) {
-      args.push(...tokenize(extraArguments))
-    }
+      mkdirSync(dirname(resultBundleAbs), {recursive: true})
 
-    args.push(xcAction)
+      const args: string[] = []
+      if (workspace) args.push('-workspace', workspace)
+      if (project) args.push('-project', project)
+      args.push('-scheme', scheme)
+      args.push('-configuration', configuration)
+      if (sdk) args.push('-sdk', sdk)
+      if (destination) args.push('-destination', destination)
+      if (parallelizeTargets) args.push('-parallelizeTargets')
+      if (showTimingSummary) args.push('-showBuildTimingSummary')
+      if (disableAutoPackageResolution)
+        args.push('-disableAutomaticPackageResolution')
+      args.push('-derivedDataPath', derivedDataPath)
+      args.push('-resultBundlePath', resultBundlePath)
+      if (archivePath) args.push('-archivePath', archivePath)
 
-    await runXcodebuild(args, outputFormatter, logPath, cwd, false)
+      if (buildNumber) {
+        args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`)
+      }
+      if (buildSettingsInput) {
+        for (const line of buildSettingsInput.split(/\r?\n/)) {
+          const trimmed = line.trim()
+          if (trimmed) args.push(trimmed)
+        }
+      }
+      if (extraArguments) {
+        args.push(...tokenize(extraArguments))
+      }
+
+      args.push(xcAction)
+
+      await runXcodebuild(args, outputFormatter, logPath, cwd, false)
+    }
 
     let exportPath = ''
     let ipaPath = ''
+    let appPath = ''
+    let pkgPath = ''
     if (exportOptionsPlist && archivePath) {
       exportPath =
         exportPathInput || join(dirname(resultBundlePath), `${scheme}.ipa`)
@@ -116,20 +130,29 @@ async function run(): Promise<void> {
         '-exportPath',
         exportPath
       ]
-      await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true)
+      await runXcodebuild(
+        exportArgs,
+        outputFormatter,
+        logPath,
+        cwd,
+        !exportOnly
+      )
 
       try {
-        const exportAbs = resolve(cwd, exportPath)
-        const ipa = readdirSync(exportAbs).find(f =>
-          f.toLowerCase().endsWith('.ipa')
-        )
-        if (ipa) ipaPath = join(exportPath, ipa)
+        const entries = readdirSync(resolve(cwd, exportPath))
+        const find = (ext: string): string => {
+          const match = entries.find(f => f.toLowerCase().endsWith(ext))
+          return match ? join(exportPath, match) : ''
+        }
+        ipaPath = find('.ipa')
+        appPath = find('.app')
+        pkgPath = find('.pkg')
       } catch {
         // ignore
       }
     }
 
-    if (zipResultBundle && existsSync(resultBundleAbs)) {
+    if (!exportOnly && zipResultBundle && existsSync(resultBundleAbs)) {
       await ditto(resultBundleAbs, `${resultBundleAbs}.zip`, cwd)
     }
     if (zipArchive && archivePath) {
@@ -139,11 +162,13 @@ async function run(): Promise<void> {
       }
     }
 
-    setOutput('result-bundle-path', resultBundlePath)
+    if (!exportOnly) setOutput('result-bundle-path', resultBundlePath)
     setOutput('log-path', logPath)
     if (archivePath) setOutput('archive-path', archivePath)
     if (exportPath) setOutput('export-path', exportPath)
     if (ipaPath) setOutput('ipa-path', ipaPath)
+    if (appPath) setOutput('app-path', appPath)
+    if (pkgPath) setOutput('pkg-path', pkgPath)
   } catch (error) {
     if (error instanceof Error) {
       setFailed(error.message)

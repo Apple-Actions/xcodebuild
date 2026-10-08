@@ -19990,7 +19990,9 @@ async function run() {
     const zipResultBundle = getBooleanInput("zip-result-bundle");
     const zipArchive = getBooleanInput("zip-archive");
     const workingDirectoryInput = getInput("working-directory");
-    if (!workspace && !project) {
+    const exportOnly = xcAction === "export";
+    const cwd = workingDirectoryInput ? resolve2(workingDirectoryInput) : process.cwd();
+    if (!exportOnly && !workspace && !project) {
       throw new Error("Either `workspace` or `project` must be provided.");
     }
     if (workspace && project) {
@@ -19999,51 +20001,62 @@ async function run() {
     if (xcAction === "archive" && !archivePathInput) {
       throw new Error("`archive-path` is required when `action` is `archive`.");
     }
+    if (exportOnly && !(archivePathInput && exportOptionsPlist)) {
+      throw new Error(
+        "`archive-path` and `export-options-plist` are required when `action` is `export`."
+      );
+    }
     if (exportOptionsPlist && !archivePathInput) {
       throw new Error(
         "`archive-path` is required when `export-options-plist` is provided."
       );
     }
-    const cwd = workingDirectoryInput ? resolve2(workingDirectoryInput) : process.cwd();
+    if (exportOnly && !existsSync2(resolve2(cwd, archivePathInput))) {
+      throw new Error(`Archive not found: ${archivePathInput}`);
+    }
     const resultBundlePath = resultBundlePathInput || join3(".build", "Artifacts", `${scheme}.xcresult`);
     const logPath = logPathInput || join3(".build", `${scheme}.log`);
     const archivePath = archivePathInput || "";
     const resultBundleAbs = resolve2(cwd, resultBundlePath);
-    if (existsSync2(resultBundleAbs)) {
-      rmSync(resultBundleAbs, { recursive: true, force: true });
-    }
-    mkdirSync(dirname3(resultBundleAbs), { recursive: true });
     mkdirSync(dirname3(resolve2(cwd, logPath)), { recursive: true });
-    const args = [];
-    if (workspace) args.push("-workspace", workspace);
-    if (project) args.push("-project", project);
-    args.push("-scheme", scheme);
-    args.push("-configuration", configuration);
-    if (sdk) args.push("-sdk", sdk);
-    if (destination) args.push("-destination", destination);
-    if (parallelizeTargets) args.push("-parallelizeTargets");
-    if (showTimingSummary) args.push("-showBuildTimingSummary");
-    if (disableAutoPackageResolution)
-      args.push("-disableAutomaticPackageResolution");
-    args.push("-derivedDataPath", derivedDataPath);
-    args.push("-resultBundlePath", resultBundlePath);
-    if (archivePath) args.push("-archivePath", archivePath);
-    if (buildNumber) {
-      args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`);
-    }
-    if (buildSettingsInput) {
-      for (const line of buildSettingsInput.split(/\r?\n/)) {
-        const trimmed = line.trim();
-        if (trimmed) args.push(trimmed);
+    if (!exportOnly) {
+      if (existsSync2(resultBundleAbs)) {
+        rmSync(resultBundleAbs, { recursive: true, force: true });
       }
+      mkdirSync(dirname3(resultBundleAbs), { recursive: true });
+      const args = [];
+      if (workspace) args.push("-workspace", workspace);
+      if (project) args.push("-project", project);
+      args.push("-scheme", scheme);
+      args.push("-configuration", configuration);
+      if (sdk) args.push("-sdk", sdk);
+      if (destination) args.push("-destination", destination);
+      if (parallelizeTargets) args.push("-parallelizeTargets");
+      if (showTimingSummary) args.push("-showBuildTimingSummary");
+      if (disableAutoPackageResolution)
+        args.push("-disableAutomaticPackageResolution");
+      args.push("-derivedDataPath", derivedDataPath);
+      args.push("-resultBundlePath", resultBundlePath);
+      if (archivePath) args.push("-archivePath", archivePath);
+      if (buildNumber) {
+        args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`);
+      }
+      if (buildSettingsInput) {
+        for (const line of buildSettingsInput.split(/\r?\n/)) {
+          const trimmed = line.trim();
+          if (trimmed) args.push(trimmed);
+        }
+      }
+      if (extraArguments) {
+        args.push(...tokenize(extraArguments));
+      }
+      args.push(xcAction);
+      await runXcodebuild(args, outputFormatter, logPath, cwd, false);
     }
-    if (extraArguments) {
-      args.push(...tokenize(extraArguments));
-    }
-    args.push(xcAction);
-    await runXcodebuild(args, outputFormatter, logPath, cwd, false);
     let exportPath = "";
     let ipaPath = "";
+    let appPath = "";
+    let pkgPath = "";
     if (exportOptionsPlist && archivePath) {
       exportPath = exportPathInput || join3(dirname3(resultBundlePath), `${scheme}.ipa`);
       mkdirSync(resolve2(cwd, exportPath), { recursive: true });
@@ -20056,17 +20069,26 @@ async function run() {
         "-exportPath",
         exportPath
       ];
-      await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true);
+      await runXcodebuild(
+        exportArgs,
+        outputFormatter,
+        logPath,
+        cwd,
+        !exportOnly
+      );
       try {
-        const exportAbs = resolve2(cwd, exportPath);
-        const ipa = readdirSync(exportAbs).find(
-          (f) => f.toLowerCase().endsWith(".ipa")
-        );
-        if (ipa) ipaPath = join3(exportPath, ipa);
+        const entries = readdirSync(resolve2(cwd, exportPath));
+        const find = (ext) => {
+          const match = entries.find((f) => f.toLowerCase().endsWith(ext));
+          return match ? join3(exportPath, match) : "";
+        };
+        ipaPath = find(".ipa");
+        appPath = find(".app");
+        pkgPath = find(".pkg");
       } catch {
       }
     }
-    if (zipResultBundle && existsSync2(resultBundleAbs)) {
+    if (!exportOnly && zipResultBundle && existsSync2(resultBundleAbs)) {
       await ditto(resultBundleAbs, `${resultBundleAbs}.zip`, cwd);
     }
     if (zipArchive && archivePath) {
@@ -20075,11 +20097,13 @@ async function run() {
         await ditto(archiveAbs, `${archiveAbs}.zip`, cwd);
       }
     }
-    setOutput("result-bundle-path", resultBundlePath);
+    if (!exportOnly) setOutput("result-bundle-path", resultBundlePath);
     setOutput("log-path", logPath);
     if (archivePath) setOutput("archive-path", archivePath);
     if (exportPath) setOutput("export-path", exportPath);
     if (ipaPath) setOutput("ipa-path", ipaPath);
+    if (appPath) setOutput("app-path", appPath);
+    if (pkgPath) setOutput("pkg-path", pkgPath);
   } catch (error2) {
     if (error2 instanceof Error) {
       setFailed(error2.message);
