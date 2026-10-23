@@ -2089,9 +2089,9 @@ var require_dispatcher_base = __commonJS({
       }
       close(callback) {
         if (callback === void 0) {
-          return new Promise((resolve3, reject) => {
+          return new Promise((resolve4, reject) => {
             this.close((err, data) => {
-              return err ? reject(err) : resolve3(data);
+              return err ? reject(err) : resolve4(data);
             });
           });
         }
@@ -2129,12 +2129,12 @@ var require_dispatcher_base = __commonJS({
           err = null;
         }
         if (callback === void 0) {
-          return new Promise((resolve3, reject) => {
+          return new Promise((resolve4, reject) => {
             this.destroy(err, (err2, data) => {
               return err2 ? (
                 /* istanbul ignore next: should never error */
                 reject(err2)
-              ) : resolve3(data);
+              ) : resolve4(data);
             });
           });
         }
@@ -4401,8 +4401,8 @@ var require_util2 = __commonJS({
     function createDeferredPromise() {
       let res;
       let rej;
-      const promise = new Promise((resolve3, reject) => {
-        res = resolve3;
+      const promise = new Promise((resolve4, reject) => {
+        res = resolve4;
         rej = reject;
       });
       return { promise, resolve: res, reject: rej };
@@ -6639,12 +6639,12 @@ upgrade: ${upgrade}\r
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve3, reject) => {
+      const waitForDrain = () => new Promise((resolve4, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve3;
+          callback = resolve4;
         }
       });
       socket.on("close", onDrain).on("drain", onDrain);
@@ -7281,12 +7281,12 @@ var require_client_h2 = __commonJS({
           cb();
         }
       }
-      const waitForDrain = () => new Promise((resolve3, reject) => {
+      const waitForDrain = () => new Promise((resolve4, reject) => {
         assert(callback === null);
         if (socket[kError]) {
           reject(socket[kError]);
         } else {
-          callback = resolve3;
+          callback = resolve4;
         }
       });
       h2stream.on("close", onDrain).on("drain", onDrain);
@@ -7764,16 +7764,16 @@ var require_client = __commonJS({
         return this[kNeedDrain] < 2;
       }
       async [kClose]() {
-        return new Promise((resolve3) => {
+        return new Promise((resolve4) => {
           if (this[kSize]) {
-            this[kClosedResolve] = resolve3;
+            this[kClosedResolve] = resolve4;
           } else {
-            resolve3(null);
+            resolve4(null);
           }
         });
       }
       async [kDestroy](err) {
-        return new Promise((resolve3) => {
+        return new Promise((resolve4) => {
           const requests = this[kQueue].splice(this[kPendingIdx]);
           for (let i = 0; i < requests.length; i++) {
             const request = requests[i];
@@ -7784,7 +7784,7 @@ var require_client = __commonJS({
               this[kClosedResolve]();
               this[kClosedResolve] = null;
             }
-            resolve3(null);
+            resolve4(null);
           };
           if (this[kHTTPContext]) {
             this[kHTTPContext].destroy(err, callback);
@@ -7835,7 +7835,7 @@ var require_client = __commonJS({
         });
       }
       try {
-        const socket = await new Promise((resolve3, reject) => {
+        const socket = await new Promise((resolve4, reject) => {
           client[kConnector]({
             host,
             hostname,
@@ -7847,7 +7847,7 @@ var require_client = __commonJS({
             if (err) {
               reject(err);
             } else {
-              resolve3(socket2);
+              resolve4(socket2);
             }
           });
         });
@@ -8183,8 +8183,8 @@ var require_pool_base = __commonJS({
         if (this[kQueue].isEmpty()) {
           await Promise.all(this[kClients].map((c) => c.close()));
         } else {
-          await new Promise((resolve3) => {
-            this[kClosedResolve] = resolve3;
+          await new Promise((resolve4) => {
+            this[kClosedResolve] = resolve4;
           });
         }
       }
@@ -9399,7 +9399,7 @@ var require_readable = __commonJS({
         if (this._readableState.closeEmitted) {
           return null;
         }
-        return await new Promise((resolve3, reject) => {
+        return await new Promise((resolve4, reject) => {
           if (this[kContentLength] > limit) {
             this.destroy(new AbortError());
           }
@@ -9412,7 +9412,7 @@ var require_readable = __commonJS({
             if (signal?.aborted) {
               reject(signal.reason ?? new AbortError());
             } else {
-              resolve3(null);
+              resolve4(null);
             }
           }).on("error", noop).on("data", function(chunk) {
             limit -= chunk.length;
@@ -9431,7 +9431,7 @@ var require_readable = __commonJS({
     }
     async function consume(stream, type) {
       assert(!stream[kConsume]);
-      return new Promise((resolve3, reject) => {
+      return new Promise((resolve4, reject) => {
         if (isUnusable(stream)) {
           const rState = stream._readableState;
           if (rState.destroyed && rState.closeEmitted === false) {
@@ -9448,7 +9448,7 @@ var require_readable = __commonJS({
             stream[kConsume] = {
               type,
               stream,
-              resolve: resolve3,
+              resolve: resolve4,
               reject,
               length: 0,
               body: []
@@ -9518,18 +9518,18 @@ var require_readable = __commonJS({
       return buffer;
     }
     function consumeEnd(consume2) {
-      const { type, body, resolve: resolve3, stream, length } = consume2;
+      const { type, body, resolve: resolve4, stream, length } = consume2;
       try {
         if (type === "text") {
-          resolve3(chunksDecode(body, length));
+          resolve4(chunksDecode(body, length));
         } else if (type === "json") {
-          resolve3(JSON.parse(chunksDecode(body, length)));
+          resolve4(JSON.parse(chunksDecode(body, length)));
         } else if (type === "arrayBuffer") {
-          resolve3(chunksConcat(body, length).buffer);
+          resolve4(chunksConcat(body, length).buffer);
         } else if (type === "blob") {
-          resolve3(new Blob(body, { type: stream[kContentType] }));
+          resolve4(new Blob(body, { type: stream[kContentType] }));
         } else if (type === "bytes") {
-          resolve3(chunksConcat(body, length));
+          resolve4(chunksConcat(body, length));
         }
         consumeFinish(consume2);
       } catch (err) {
@@ -9786,9 +9786,9 @@ var require_api_request = __commonJS({
     };
     function request(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve3, reject) => {
+        return new Promise((resolve4, reject) => {
           request.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve3(data);
+            return err ? reject(err) : resolve4(data);
           });
         });
       }
@@ -10011,9 +10011,9 @@ var require_api_stream = __commonJS({
     };
     function stream(opts, factory, callback) {
       if (callback === void 0) {
-        return new Promise((resolve3, reject) => {
+        return new Promise((resolve4, reject) => {
           stream.call(this, opts, factory, (err, data) => {
-            return err ? reject(err) : resolve3(data);
+            return err ? reject(err) : resolve4(data);
           });
         });
       }
@@ -10298,9 +10298,9 @@ var require_api_upgrade = __commonJS({
     };
     function upgrade(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve3, reject) => {
+        return new Promise((resolve4, reject) => {
           upgrade.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve3(data);
+            return err ? reject(err) : resolve4(data);
           });
         });
       }
@@ -10392,9 +10392,9 @@ var require_api_connect = __commonJS({
     };
     function connect(opts, callback) {
       if (callback === void 0) {
-        return new Promise((resolve3, reject) => {
+        return new Promise((resolve4, reject) => {
           connect.call(this, opts, (err, data) => {
-            return err ? reject(err) : resolve3(data);
+            return err ? reject(err) : resolve4(data);
           });
         });
       }
@@ -14256,7 +14256,7 @@ var require_fetch = __commonJS({
       function dispatch({ body }) {
         const url = requestCurrentURL(request);
         const agent = fetchParams.controller.dispatcher;
-        return new Promise((resolve3, reject) => agent.dispatch(
+        return new Promise((resolve4, reject) => agent.dispatch(
           {
             path: url.pathname + url.search,
             origin: url.origin,
@@ -14332,7 +14332,7 @@ var require_fetch = __commonJS({
                 }
               }
               const onError = this.onError.bind(this);
-              resolve3({
+              resolve4({
                 status,
                 statusText,
                 headersList,
@@ -14378,7 +14378,7 @@ var require_fetch = __commonJS({
               for (let i = 0; i < rawHeaders.length; i += 2) {
                 headersList.append(bufferToLowerCasedHeaderName(rawHeaders[i]), rawHeaders[i + 1].toString("latin1"), true);
               }
-              resolve3({
+              resolve4({
                 status,
                 statusText: STATUS_CODES[status],
                 headersList,
@@ -18070,8 +18070,8 @@ var require_util8 = __commonJS({
       return true;
     }
     function delay(ms) {
-      return new Promise((resolve3) => {
-        setTimeout(resolve3, ms).unref();
+      return new Promise((resolve4) => {
+        setTimeout(resolve4, ms).unref();
       });
     }
     module.exports = {
@@ -18913,11 +18913,11 @@ import { EOL as EOL3 } from "os";
 import { constants, promises } from "fs";
 var __awaiter = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve3) {
-      resolve3(value);
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve3, reject) {
+  return new (P || (P = Promise))(function(resolve4, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -18933,7 +18933,7 @@ var __awaiter = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19209,11 +19209,11 @@ import * as fs2 from "fs";
 import * as path from "path";
 var __awaiter2 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve3) {
-      resolve3(value);
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve3, reject) {
+  return new (P || (P = Promise))(function(resolve4, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -19229,7 +19229,7 @@ var __awaiter2 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19333,11 +19333,11 @@ function isUnixExecutable(stats) {
 // node_modules/@actions/io/lib/io.js
 var __awaiter3 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve3) {
-      resolve3(value);
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve3, reject) {
+  return new (P || (P = Promise))(function(resolve4, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -19353,7 +19353,7 @@ var __awaiter3 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19427,11 +19427,11 @@ function findInPath(tool) {
 import { setTimeout as setTimeout2 } from "timers";
 var __awaiter4 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve3) {
-      resolve3(value);
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve3, reject) {
+  return new (P || (P = Promise))(function(resolve4, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -19447,7 +19447,7 @@ var __awaiter4 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19666,7 +19666,7 @@ var ToolRunner = class extends events.EventEmitter {
         this.toolPath = path3.resolve(process.cwd(), this.options.cwd || process.cwd(), this.toolPath);
       }
       this.toolPath = yield which(this.toolPath, true);
-      return new Promise((resolve3, reject) => __awaiter4(this, void 0, void 0, function* () {
+      return new Promise((resolve4, reject) => __awaiter4(this, void 0, void 0, function* () {
         this._debug(`exec tool: ${this.toolPath}`);
         this._debug("arguments:");
         for (const arg of this.args) {
@@ -19749,7 +19749,7 @@ var ToolRunner = class extends events.EventEmitter {
           if (error2) {
             reject(error2);
           } else {
-            resolve3(exitCode);
+            resolve4(exitCode);
           }
         });
         if (this.options.input) {
@@ -19872,11 +19872,11 @@ var ExecState = class _ExecState extends events.EventEmitter {
 // node_modules/@actions/exec/lib/exec.js
 var __awaiter5 = function(thisArg, _arguments, P, generator) {
   function adopt(value) {
-    return value instanceof P ? value : new P(function(resolve3) {
-      resolve3(value);
+    return value instanceof P ? value : new P(function(resolve4) {
+      resolve4(value);
     });
   }
-  return new (P || (P = Promise))(function(resolve3, reject) {
+  return new (P || (P = Promise))(function(resolve4, reject) {
     function fulfilled(value) {
       try {
         step(generator.next(value));
@@ -19892,7 +19892,7 @@ var __awaiter5 = function(thisArg, _arguments, P, generator) {
       }
     }
     function step(result) {
-      result.done ? resolve3(result.value) : adopt(result.value).then(fulfilled, rejected);
+      result.done ? resolve4(result.value) : adopt(result.value).then(fulfilled, rejected);
     }
     step((generator = generator.apply(thisArg, _arguments || [])).next());
   });
@@ -19961,8 +19961,109 @@ function info(message) {
 }
 
 // src/main.ts
-import { existsSync as existsSync2, mkdirSync, readdirSync, rmSync } from "node:fs";
-import { dirname as dirname3, join as join3, resolve as resolve2 } from "node:path";
+import { existsSync as existsSync3, mkdirSync, rmSync } from "node:fs";
+import { dirname as dirname3, join as join4, resolve as resolve3 } from "node:path";
+
+// src/xcodebuild.ts
+import { existsSync as existsSync2, readdirSync } from "node:fs";
+import { join as join3, resolve as resolve2 } from "node:path";
+function shellQuote(s) {
+  if (s === "") return "''";
+  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s;
+  return `'${s.replace(/'/g, `'\\''`)}'`;
+}
+function tokenize(input) {
+  const out = [];
+  const re = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g;
+  let m;
+  while ((m = re.exec(input)) !== null) {
+    if (m[1] !== void 0) out.push(m[1].replace(/\\(.)/g, "$1"));
+    else if (m[2] !== void 0) out.push(m[2]);
+    else if (m[3] !== void 0) out.push(m[3]);
+  }
+  return out;
+}
+function validateInputs(opts) {
+  const { workspace, project, xcAction, archivePath, exportOptionsPlist, cwd } = opts;
+  const exportOnly = xcAction === "export";
+  if (!exportOnly && !workspace && !project) {
+    throw new Error("Either `workspace` or `project` must be provided.");
+  }
+  if (workspace && project) {
+    throw new Error("`workspace` and `project` are mutually exclusive.");
+  }
+  if ((xcAction === "archive" || exportOnly) && !archivePath) {
+    throw new Error(
+      `\`archive-path\` is required when \`action\` is \`${xcAction}\`.`
+    );
+  }
+  if (exportOnly && !exportOptionsPlist) {
+    throw new Error(
+      "`export-options-plist` is required when `action` is `export`."
+    );
+  }
+  if (exportOptionsPlist && !archivePath) {
+    throw new Error(
+      "`archive-path` is required when `export-options-plist` is provided."
+    );
+  }
+  if (exportOnly && !existsSync2(resolve2(cwd, archivePath))) {
+    throw new Error(`Archive not found: ${archivePath}`);
+  }
+}
+function buildXcodebuildArgs(opts) {
+  const args = [];
+  if (opts.workspace) args.push("-workspace", opts.workspace);
+  if (opts.project) args.push("-project", opts.project);
+  args.push("-scheme", opts.scheme);
+  args.push("-configuration", opts.configuration);
+  if (opts.sdk) args.push("-sdk", opts.sdk);
+  if (opts.destination) args.push("-destination", opts.destination);
+  if (opts.parallelizeTargets) args.push("-parallelizeTargets");
+  if (opts.showTimingSummary) args.push("-showBuildTimingSummary");
+  if (opts.disableAutoPackageResolution)
+    args.push("-disableAutomaticPackageResolution");
+  args.push("-derivedDataPath", opts.derivedDataPath);
+  args.push("-resultBundlePath", opts.resultBundlePath);
+  if (opts.archivePath) args.push("-archivePath", opts.archivePath);
+  if (opts.buildNumber) {
+    args.push(`CURRENT_PROJECT_VERSION=${opts.buildNumber}`);
+  }
+  if (opts.buildSettings) {
+    for (const line of opts.buildSettings.split(/\r?\n/)) {
+      const trimmed = line.trim();
+      if (trimmed) args.push(trimmed);
+    }
+  }
+  if (opts.extraArguments) {
+    args.push(...tokenize(opts.extraArguments));
+  }
+  args.push(opts.action);
+  return args;
+}
+function findExportArtifacts(exportPath, cwd = process.cwd()) {
+  try {
+    const entries = readdirSync(resolve2(cwd, exportPath));
+    const find = (ext) => {
+      const match = entries.find((f) => f.toLowerCase().endsWith(ext));
+      return match ? join3(exportPath, match) : "";
+    };
+    return {
+      ipaPath: find(".ipa"),
+      appPath: find(".app"),
+      pkgPath: find(".pkg")
+    };
+  } catch {
+    return { ipaPath: "", appPath: "", pkgPath: "" };
+  }
+}
+function buildPipeline(args, formatter, logPath, appendLog) {
+  const quoted = ["xcrun", "xcodebuild", ...args].map(shellQuote).join(" ");
+  const tee = appendLog ? `tee -a ${shellQuote(logPath)}` : `tee ${shellQuote(logPath)}`;
+  return formatter ? `set -o pipefail; ${quoted} | ${tee} | ${formatter}` : `set -o pipefail; ${quoted} | ${tee}`;
+}
+
+// src/main.ts
 async function run() {
   try {
     const workspace = getInput("workspace");
@@ -19991,68 +20092,43 @@ async function run() {
     const zipArchive = getBooleanInput("zip-archive");
     const workingDirectoryInput = getInput("working-directory");
     const exportOnly = xcAction === "export";
-    const cwd = workingDirectoryInput ? resolve2(workingDirectoryInput) : process.cwd();
-    if (!exportOnly && !workspace && !project) {
-      throw new Error("Either `workspace` or `project` must be provided.");
-    }
-    if (workspace && project) {
-      throw new Error("`workspace` and `project` are mutually exclusive.");
-    }
-    if ((xcAction === "archive" || exportOnly) && !archivePathInput) {
-      throw new Error(
-        `\`archive-path\` is required when \`action\` is \`${xcAction}\`.`
-      );
-    }
-    if (exportOnly && !exportOptionsPlist) {
-      throw new Error(
-        "`export-options-plist` is required when `action` is `export`."
-      );
-    }
-    if (exportOptionsPlist && !archivePathInput) {
-      throw new Error(
-        "`archive-path` is required when `export-options-plist` is provided."
-      );
-    }
-    if (exportOnly && !existsSync2(resolve2(cwd, archivePathInput))) {
-      throw new Error(`Archive not found: ${archivePathInput}`);
-    }
-    const resultBundlePath = resultBundlePathInput || join3(".build", "Artifacts", `${scheme}.xcresult`);
-    const logPath = logPathInput || join3(".build", `${scheme}.log`);
+    const cwd = workingDirectoryInput ? resolve3(workingDirectoryInput) : process.cwd();
+    validateInputs({
+      workspace,
+      project,
+      xcAction,
+      archivePath: archivePathInput,
+      exportOptionsPlist,
+      cwd
+    });
+    const resultBundlePath = resultBundlePathInput || join4(".build", "Artifacts", `${scheme}.xcresult`);
+    const logPath = logPathInput || join4(".build", `${scheme}.log`);
     const archivePath = archivePathInput || "";
-    const resultBundleAbs = resolve2(cwd, resultBundlePath);
-    mkdirSync(dirname3(resolve2(cwd, logPath)), { recursive: true });
+    const resultBundleAbs = resolve3(cwd, resultBundlePath);
+    mkdirSync(dirname3(resolve3(cwd, logPath)), { recursive: true });
     if (!exportOnly) {
-      if (existsSync2(resultBundleAbs)) {
+      if (existsSync3(resultBundleAbs)) {
         rmSync(resultBundleAbs, { recursive: true, force: true });
       }
       mkdirSync(dirname3(resultBundleAbs), { recursive: true });
-      const args = [];
-      if (workspace) args.push("-workspace", workspace);
-      if (project) args.push("-project", project);
-      args.push("-scheme", scheme);
-      args.push("-configuration", configuration);
-      if (sdk) args.push("-sdk", sdk);
-      if (destination) args.push("-destination", destination);
-      if (parallelizeTargets) args.push("-parallelizeTargets");
-      if (showTimingSummary) args.push("-showBuildTimingSummary");
-      if (disableAutoPackageResolution)
-        args.push("-disableAutomaticPackageResolution");
-      args.push("-derivedDataPath", derivedDataPath);
-      args.push("-resultBundlePath", resultBundlePath);
-      if (archivePath) args.push("-archivePath", archivePath);
-      if (buildNumber) {
-        args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`);
-      }
-      if (buildSettingsInput) {
-        for (const line of buildSettingsInput.split(/\r?\n/)) {
-          const trimmed = line.trim();
-          if (trimmed) args.push(trimmed);
-        }
-      }
-      if (extraArguments) {
-        args.push(...tokenize(extraArguments));
-      }
-      args.push(xcAction);
+      const args = buildXcodebuildArgs({
+        workspace,
+        project,
+        scheme,
+        configuration,
+        sdk,
+        destination,
+        parallelizeTargets,
+        showTimingSummary,
+        disableAutoPackageResolution,
+        derivedDataPath,
+        resultBundlePath,
+        archivePath,
+        buildNumber,
+        buildSettings: buildSettingsInput,
+        extraArguments,
+        action: xcAction
+      });
       await runXcodebuild(args, outputFormatter, logPath, cwd, false);
     }
     let exportPath = "";
@@ -20060,8 +20136,8 @@ async function run() {
     let appPath = "";
     let pkgPath = "";
     if (exportOptionsPlist && archivePath) {
-      exportPath = exportPathInput || join3(dirname3(resultBundlePath), `${scheme}.ipa`);
-      mkdirSync(resolve2(cwd, exportPath), { recursive: true });
+      exportPath = exportPathInput || join4(dirname3(resultBundlePath), `${scheme}.ipa`);
+      mkdirSync(resolve3(cwd, exportPath), { recursive: true });
       const exportArgs = [
         "-exportArchive",
         "-exportOptionsPlist",
@@ -20072,24 +20148,14 @@ async function run() {
         exportPath
       ];
       await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true);
-      try {
-        const entries = readdirSync(resolve2(cwd, exportPath));
-        const find = (ext) => {
-          const match = entries.find((f) => f.toLowerCase().endsWith(ext));
-          return match ? join3(exportPath, match) : "";
-        };
-        ipaPath = find(".ipa");
-        appPath = find(".app");
-        pkgPath = find(".pkg");
-      } catch {
-      }
+      ({ ipaPath, appPath, pkgPath } = findExportArtifacts(exportPath, cwd));
     }
-    if (!exportOnly && zipResultBundle && existsSync2(resultBundleAbs)) {
+    if (!exportOnly && zipResultBundle && existsSync3(resultBundleAbs)) {
       await ditto(resultBundleAbs, `${resultBundleAbs}.zip`, cwd);
     }
     if (zipArchive && archivePath) {
-      const archiveAbs = resolve2(cwd, archivePath);
-      if (existsSync2(archiveAbs)) {
+      const archiveAbs = resolve3(cwd, archivePath);
+      if (existsSync3(archiveAbs)) {
         await ditto(archiveAbs, `${archiveAbs}.zip`, cwd);
       }
     }
@@ -20110,10 +20176,14 @@ async function run() {
 }
 async function runXcodebuild(args, formatter, logPath, cwd, appendLog) {
   const quoted = ["xcrun", "xcodebuild", ...args].map(shellQuote).join(" ");
-  const tee = `tee ${appendLog ? "-a" : ""} ${shellQuote(logPath)}`.trim();
-  const pipeline = formatter ? `set -o pipefail; ${quoted} | ${tee} | ${formatter}` : `set -o pipefail; ${quoted} | ${tee}`;
   info(`Running: ${quoted}`);
-  await exec("bash", ["-c", pipeline], { cwd });
+  await exec(
+    "bash",
+    ["-c", buildPipeline(args, formatter, logPath, appendLog)],
+    {
+      cwd
+    }
+  );
 }
 async function ditto(src, dest, cwd) {
   await exec(
@@ -20121,22 +20191,6 @@ async function ditto(src, dest, cwd) {
     ["-c", "-k", "--sequesterRsrc", "--keepParent", src, dest],
     { cwd }
   );
-}
-function shellQuote(s) {
-  if (s === "") return "''";
-  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s;
-  return `'${s.replace(/'/g, `'\\''`)}'`;
-}
-function tokenize(input) {
-  const out = [];
-  const re = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g;
-  let m;
-  while ((m = re.exec(input)) !== null) {
-    if (m[1] !== void 0) out.push(m[1].replace(/\\(.)/g, "$1"));
-    else if (m[2] !== void 0) out.push(m[2]);
-    else if (m[3] !== void 0) out.push(m[3]);
-  }
-  return out;
 }
 run();
 /*! Bundled license information:

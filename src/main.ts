@@ -6,8 +6,15 @@ import {
   setOutput
 } from '@actions/core'
 import {exec} from '@actions/exec'
-import {existsSync, mkdirSync, readdirSync, rmSync} from 'node:fs'
+import {existsSync, mkdirSync, rmSync} from 'node:fs'
 import {dirname, join, resolve} from 'node:path'
+import {
+  buildPipeline,
+  buildXcodebuildArgs,
+  findExportArtifacts,
+  shellQuote,
+  validateInputs
+} from './xcodebuild'
 
 async function run(): Promise<void> {
   try {
@@ -43,30 +50,14 @@ async function run(): Promise<void> {
       ? resolve(workingDirectoryInput)
       : process.cwd()
 
-    if (!exportOnly && !workspace && !project) {
-      throw new Error('Either `workspace` or `project` must be provided.')
-    }
-    if (workspace && project) {
-      throw new Error('`workspace` and `project` are mutually exclusive.')
-    }
-    if ((xcAction === 'archive' || exportOnly) && !archivePathInput) {
-      throw new Error(
-        `\`archive-path\` is required when \`action\` is \`${xcAction}\`.`
-      )
-    }
-    if (exportOnly && !exportOptionsPlist) {
-      throw new Error(
-        '`export-options-plist` is required when `action` is `export`.'
-      )
-    }
-    if (exportOptionsPlist && !archivePathInput) {
-      throw new Error(
-        '`archive-path` is required when `export-options-plist` is provided.'
-      )
-    }
-    if (exportOnly && !existsSync(resolve(cwd, archivePathInput))) {
-      throw new Error(`Archive not found: ${archivePathInput}`)
-    }
+    validateInputs({
+      workspace,
+      project,
+      xcAction,
+      archivePath: archivePathInput,
+      exportOptionsPlist,
+      cwd
+    })
 
     const resultBundlePath =
       resultBundlePathInput || join('.build', 'Artifacts', `${scheme}.xcresult`)
@@ -82,35 +73,24 @@ async function run(): Promise<void> {
       }
       mkdirSync(dirname(resultBundleAbs), {recursive: true})
 
-      const args: string[] = []
-      if (workspace) args.push('-workspace', workspace)
-      if (project) args.push('-project', project)
-      args.push('-scheme', scheme)
-      args.push('-configuration', configuration)
-      if (sdk) args.push('-sdk', sdk)
-      if (destination) args.push('-destination', destination)
-      if (parallelizeTargets) args.push('-parallelizeTargets')
-      if (showTimingSummary) args.push('-showBuildTimingSummary')
-      if (disableAutoPackageResolution)
-        args.push('-disableAutomaticPackageResolution')
-      args.push('-derivedDataPath', derivedDataPath)
-      args.push('-resultBundlePath', resultBundlePath)
-      if (archivePath) args.push('-archivePath', archivePath)
-
-      if (buildNumber) {
-        args.push(`CURRENT_PROJECT_VERSION=${buildNumber}`)
-      }
-      if (buildSettingsInput) {
-        for (const line of buildSettingsInput.split(/\r?\n/)) {
-          const trimmed = line.trim()
-          if (trimmed) args.push(trimmed)
-        }
-      }
-      if (extraArguments) {
-        args.push(...tokenize(extraArguments))
-      }
-
-      args.push(xcAction)
+      const args = buildXcodebuildArgs({
+        workspace,
+        project,
+        scheme,
+        configuration,
+        sdk,
+        destination,
+        parallelizeTargets,
+        showTimingSummary,
+        disableAutoPackageResolution,
+        derivedDataPath,
+        resultBundlePath,
+        archivePath,
+        buildNumber,
+        buildSettings: buildSettingsInput,
+        extraArguments,
+        action: xcAction
+      })
 
       await runXcodebuild(args, outputFormatter, logPath, cwd, false)
     }
@@ -133,19 +113,7 @@ async function run(): Promise<void> {
         exportPath
       ]
       await runXcodebuild(exportArgs, outputFormatter, logPath, cwd, true)
-
-      try {
-        const entries = readdirSync(resolve(cwd, exportPath))
-        const find = (ext: string): string => {
-          const match = entries.find(f => f.toLowerCase().endsWith(ext))
-          return match ? join(exportPath, match) : ''
-        }
-        ipaPath = find('.ipa')
-        appPath = find('.app')
-        pkgPath = find('.pkg')
-      } catch {
-        // ignore
-      }
+      ;({ipaPath, appPath, pkgPath} = findExportArtifacts(exportPath, cwd))
     }
 
     if (!exportOnly && zipResultBundle && existsSync(resultBundleAbs)) {
@@ -182,12 +150,14 @@ async function runXcodebuild(
   appendLog: boolean
 ): Promise<void> {
   const quoted = ['xcrun', 'xcodebuild', ...args].map(shellQuote).join(' ')
-  const tee = `tee ${appendLog ? '-a' : ''} ${shellQuote(logPath)}`.trim()
-  const pipeline = formatter
-    ? `set -o pipefail; ${quoted} | ${tee} | ${formatter}`
-    : `set -o pipefail; ${quoted} | ${tee}`
   info(`Running: ${quoted}`)
-  await exec('bash', ['-c', pipeline], {cwd})
+  await exec(
+    'bash',
+    ['-c', buildPipeline(args, formatter, logPath, appendLog)],
+    {
+      cwd
+    }
+  )
 }
 
 async function ditto(src: string, dest: string, cwd: string): Promise<void> {
@@ -196,24 +166,6 @@ async function ditto(src: string, dest: string, cwd: string): Promise<void> {
     ['-c', '-k', '--sequesterRsrc', '--keepParent', src, dest],
     {cwd}
   )
-}
-
-function shellQuote(s: string): string {
-  if (s === '') return "''"
-  if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s
-  return `'${s.replace(/'/g, `'\\''`)}'`
-}
-
-function tokenize(input: string): string[] {
-  const out: string[] = []
-  const re = /"((?:[^"\\]|\\.)*)"|'([^']*)'|(\S+)/g
-  let m: RegExpExecArray | null
-  while ((m = re.exec(input)) !== null) {
-    if (m[1] !== undefined) out.push(m[1].replace(/\\(.)/g, '$1'))
-    else if (m[2] !== undefined) out.push(m[2])
-    else if (m[3] !== undefined) out.push(m[3])
-  }
-  return out
 }
 
 run()
