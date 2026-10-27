@@ -1,13 +1,12 @@
 # Merge every green Dependabot PR into main in one push.
 # Triggered when Dependabot CI finishes or when main moves; no schedule.
-#
-# zizmor: ignore[dangerous-triggers] — write token is only on list/push steps;
-# merge and yarn verify run without GH_TOKEN in the environment.
+# Write token is only on list/push steps; merge and yarn verify run without it.
 name: dependabot-land
 
 run-name: dependabot-land
 
 on:
+  # zizmor: ignore[dangerous-triggers] — token isolated to list/push; no PR checkout of untrusted code
   workflow_run:
     workflows:
       - test
@@ -28,6 +27,7 @@ on:
 permissions:
   contents: write
   pull-requests: read
+  workflows: write
 
 concurrency:
   group: dependabot-land
