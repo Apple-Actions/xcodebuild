@@ -1,6 +1,6 @@
 {
   "name": "xcodebuild-action",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "GitHub Action to build, archive, and export an Xcode project with xcodebuild.",
   "type": "module",
   "main": "src/main.ts",
