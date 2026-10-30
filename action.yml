@@ -26,7 +26,7 @@ inputs:
     description: 'Destination specifier (e.g. "generic/platform=iOS").'
     required: false
   action:
-    description: 'xcodebuild action: build, archive, test, build-for-testing, clean, or export. `export` only runs `xcodebuild -exportArchive` on an existing `archive-path`, requires `export-options-plist`, and ignores `workspace`/`project`.'
+    description: 'xcodebuild action: build, archive, test, build-for-testing, test-without-building, clean, or export. `export` only runs `xcodebuild -exportArchive` on an existing `archive-path`, requires `export-options-plist`, and ignores `workspace`/`project`.'
     required: false
     default: 'build'
   archive-path:
@@ -59,7 +59,7 @@ inputs:
     required: false
     default: 'xcbeautify --renderer github-actions'
   log-path:
-    description: 'Path to write the raw xcodebuild log. Defaults to `.build/<scheme>.log`.'
+    description: 'Path to write the raw xcodebuild log. Defaults to `.build/<scheme>-<action>.log`.'
     required: false
   parallelize-targets:
     description: 'Pass -parallelizeTargets to xcodebuild.'

@@ -20365,6 +20365,9 @@ import { dirname as dirname3, join as join4, resolve as resolve3 } from "node:pa
 // src/xcodebuild.ts
 import { existsSync as existsSync2, readdirSync } from "node:fs";
 import { join as join3, resolve as resolve2 } from "node:path";
+function defaultLogPath(scheme, action) {
+  return join3(".build", `${scheme}-${action}.log`);
+}
 function shellQuote(s) {
   if (s === "") return "''";
   if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s;
@@ -20500,7 +20503,7 @@ async function run() {
       cwd
     });
     const resultBundlePath = resultBundlePathInput || join4(".build", "Artifacts", `${scheme}.xcresult`);
-    const logPath = logPathInput || join4(".build", `${scheme}.log`);
+    const logPath = logPathInput || defaultLogPath(scheme, xcAction);
     const archivePath = archivePathInput || "";
     const resultBundleAbs = resolve3(cwd, resultBundlePath);
     mkdirSync(dirname3(resolve3(cwd, logPath)), { recursive: true });

@@ -37,6 +37,32 @@ See [`Apple-Actions/Example-macOS`](https://github.com/Apple-Actions/Example-mac
     build-number: ${{ github.run_number }}
 ```
 
+### Build for testing, then run tests
+
+Split compile and XCTest into two steps in the same job so build failures and test failures show separately. Both steps share the default DerivedData (`.build/DerivedData`); override `log-path` or `result-bundle-path` only if you need distinct artifacts beyond the defaults.
+
+```yaml
+- name: Build
+  uses: Apple-Actions/xcodebuild@v1
+  with:
+    project: App.xcodeproj
+    scheme: App
+    configuration: Debug
+    sdk: iphonesimulator
+    destination: platform=iOS Simulator,OS=latest,name=iPhone 17
+    action: build-for-testing
+
+- name: Run Tests
+  uses: Apple-Actions/xcodebuild@v1
+  with:
+    project: App.xcodeproj
+    scheme: App
+    configuration: Debug
+    sdk: iphonesimulator
+    destination: platform=iOS Simulator,OS=latest,name=iPhone 17
+    action: test-without-building
+```
+
 ### macOS: Mac App Store and Developer ID from one archive
 
 Archive once and export twice. The notarized DMG then holds the same binary you upload to TestFlight, and the dSYMs in the archive symbolicate crashes from both.
@@ -109,7 +135,7 @@ In an App Store macOS `ExportOptions.plist`, `installerSigningCertificate` is `3
 | `configuration` | Build configuration. | `Release` |
 | `sdk` | SDK to build against (e.g. `iphoneos`, `iphonesimulator`, `macosx`). | — |
 | `destination` | Destination specifier, e.g. `generic/platform=iOS`. | — |
-| `action` | xcodebuild action: `build`, `archive`, `test`, `build-for-testing`, `clean`, or `export`. `export` only runs `-exportArchive` on an existing `archive-path` and requires `export-options-plist`. | `build` |
+| `action` | xcodebuild action: `build`, `archive`, `test`, `build-for-testing`, `test-without-building`, `clean`, or `export`. `export` only runs `-exportArchive` on an existing `archive-path` and requires `export-options-plist`. | `build` |
 | `archive-path` | Output path for the `.xcarchive`. Required when `action` is `archive` or `export`. | — |
 | `export-options-plist` | Path to an `ExportOptions.plist`. When set, the archive is exported. | — |
 | `export-path` | Export directory for the IPA. | `<result-bundle-dir>/<scheme>.ipa` |
@@ -119,7 +145,7 @@ In an App Store macOS `ExportOptions.plist`, `installerSigningCertificate` is `3
 | `build-settings` | Additional `KEY=VALUE` build settings, one per line. | — |
 | `extra-arguments` | Additional arguments passed verbatim to `xcodebuild`. | — |
 | `output-formatter` | Command to pipe output through (`xcbeautify`, `xcpretty`, or empty). The default enables xcbeautify's `github-actions` renderer so compile errors/warnings surface as inline PR annotations. | `xcbeautify --renderer github-actions` |
-| `log-path` | Path to write the raw xcodebuild log. | `.build/<scheme>.log` |
+| `log-path` | Path to write the raw xcodebuild log. | `.build/<scheme>-<action>.log` |
 | `parallelize-targets` | Pass `-parallelizeTargets`. | `true` |
 | `show-build-timing-summary` | Pass `-showBuildTimingSummary`. | `true` |
 | `disable-automatic-package-resolution` | Pass `-disableAutomaticPackageResolution`. | `true` |
