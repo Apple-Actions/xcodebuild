@@ -11,6 +11,7 @@ import {dirname, join, resolve} from 'node:path'
 import {
   buildPipeline,
   buildXcodebuildArgs,
+  defaultLogPath,
   findExportArtifacts,
   shellQuote,
   validateInputs
@@ -61,7 +62,7 @@ async function run(): Promise<void> {
 
     const resultBundlePath =
       resultBundlePathInput || join('.build', 'Artifacts', `${scheme}.xcresult`)
-    const logPath = logPathInput || join('.build', `${scheme}.log`)
+    const logPath = logPathInput || defaultLogPath(scheme, xcAction)
     const archivePath = archivePathInput || ''
 
     const resultBundleAbs = resolve(cwd, resultBundlePath)

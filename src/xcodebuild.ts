@@ -1,6 +1,10 @@
 import {existsSync, readdirSync} from 'node:fs'
 import {join, resolve} from 'node:path'
 
+export function defaultLogPath(scheme: string, action: string): string {
+  return join('.build', `${scheme}-${action}.log`)
+}
+
 export function shellQuote(s: string): string {
   if (s === '') return "''"
   if (/^[A-Za-z0-9_@%+=:,./-]+$/.test(s)) return s

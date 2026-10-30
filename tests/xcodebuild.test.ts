@@ -5,11 +5,23 @@ import {afterEach, describe, expect, it} from 'vitest'
 import {
   buildPipeline,
   buildXcodebuildArgs,
+  defaultLogPath,
   findExportArtifacts,
   shellQuote,
   tokenize,
   validateInputs
 } from '../src/xcodebuild'
+
+describe('defaultLogPath', () => {
+  it('includes scheme and action in the default path', () => {
+    expect(defaultLogPath('App', 'build-for-testing')).toBe(
+      join('.build', 'App-build-for-testing.log')
+    )
+    expect(defaultLogPath('App', 'test-without-building')).toBe(
+      join('.build', 'App-test-without-building.log')
+    )
+  })
+})
 
 describe('shellQuote', () => {
   it('returns alphanumeric and safe charset unchanged', () => {
